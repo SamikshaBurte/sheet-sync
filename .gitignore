@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.pnpm-store/
+.env
+python-service/demo_rows.json
+# Keep service-account keys outside the repository; use an environment variable
+# or a local path supplied through GOOGLE_APPLICATION_CREDENTIALS instead.
+service-account*.json

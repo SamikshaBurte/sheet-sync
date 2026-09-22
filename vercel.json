@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
+  "functions": {
+    "api/sheet.py": { "maxDuration": 30 }
+  }
+}

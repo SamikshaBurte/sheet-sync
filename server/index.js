@@ -1,0 +1,13 @@
+require('dotenv').config()
+const express = require('express')
+const cors = require('cors')
+const axios = require('axios')
+const path = require('path')
+const app = express()
+const PYTHON_URL = process.env.PYTHON_SERVICE_URL || 'http://127.0.0.1:8000'
+app.use(cors()); app.use(express.json())
+app.get('/api/rows', async (_, res) => { try { const r = await axios.get(`${PYTHON_URL}/rows`); res.json(r.data) } catch { res.status(503).json({ error: 'Python sync service is unavailable' }) } })
+app.put('/api/rows', async (req, res) => { try { const r = await axios.put(`${PYTHON_URL}/rows`, req.body); res.status(r.status).json(r.data) } catch (e) { res.status(e.response?.status || 503).json(e.response?.data || { error: 'Python sync service is unavailable' }) } })
+app.use(express.static(path.join(__dirname, '..', 'dist')))
+app.get('*', (_, res) => res.sendFile(path.join(__dirname, '..', 'dist', 'index.html')))
+app.listen(process.env.PORT || 3001, () => console.log('Node API listening on port 3001'))
