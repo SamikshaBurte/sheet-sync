@@ -1,81 +1,127 @@
 # Bajaj Earths - Real-Time Google Sheets Sync
 
-A single-page React table that keeps columns **A**, **B**, and **C** synchronized with the supplied Google Sheet. It uses a deliberately simple three-layer architecture: React is the editable UI, Node.js is the public API gateway/static host, and Python owns Google authentication plus the Sheets API call.
+This project is a React + Google Sheets app that keeps columns A, B, and C synchronized with a Google Sheet.
 
-## What is included
+The current production setup is Vercel-only: the frontend is served by Vercel and the API is implemented as a Vercel serverless route in [api/rows.js](api/rows.js). The app still reads and writes the Google Sheet using the Google Sheets API and a service-account JSON stored as a Vercel environment variable.
 
-- Exactly three editable data columns (A, B, C), with add and delete row controls.
-- **Edit table → Submit changes** workflow with validation-preserving whole-range writes.
-- 2-second polling to detect Google Sheet edits without a browser refresh.
-- A safe demo mode, so the interface is immediately demonstrable even before credentials exist.
-- No credential is embedded in frontend code or committed to Git.
+## Included features
 
-## Run locally
+- Editable table with A, B, and C columns
+- Add-row and remove-row controls
+- Submit changes to Google Sheets
+- Polling every 2 seconds to detect direct edits in the sheet
+- Demo fallback when credentials are not configured
 
-1. Install Node dependencies: `npm install`.
-2. Create a Python virtual environment and install `pip install -r python-service/requirements.txt`.
-3. Copy `.env.example` to `.env` and add credentials (details below).
-4. Start the Python service: `uvicorn main:app --app-dir python-service --port 8000`.
-5. In a second terminal run `npm run dev`, then open `http://localhost:5173`.
+## Local run instructions
 
-Without credentials, the app runs in **demo mode**, persisting edits only in `python-service/demo_rows.json`. This makes the design and Edit/Submit experience immediately testable; it does not claim live Google writes.
+### 1) Install Node packages
 
-## Connect the provided Sheet
+```powershell
+cd "D:\bajaj earth assignment project"
+npm install
+```
 
-1. In Google Cloud Console, create/select a project and enable **Google Sheets API**.
-2. Create a service account and JSON key. Do not upload the key to GitHub.
-3. Share the Google Sheet with the service-account email as **Editor**.
-4. Put either the minified JSON in `GOOGLE_SERVICE_ACCOUNT_JSON` or an absolute local path in `GOOGLE_APPLICATION_CREDENTIALS` in `.env`.
-5. Ensure `Sheet1` uses headers `A | B | C` in row 1. The API synchronizes the complete `Sheet1!A:C` range, so rows can be added or deleted.
+### 2) Create and activate the Python environment
 
-## Synchronization behavior and limitation
+```powershell
+cd "D:\bajaj earth assignment project"
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r python-service\requirements.txt
+```
 
-The browser requests `GET /api/rows` every **2 seconds**. The Python service reads the complete `Sheet1!A:C` range, so changes made directly in Google Sheets appear in the page on the next polling cycle without a browser refresh. After Submit, it clears and rewrites the A:C data range from the table, ensuring removed rows do not leave old cell values behind. Typical direct-edit latency is 0-2 seconds plus API response time. Polling is used because Google Sheets does not provide a straightforward first-party cell-change webhook.
+### 3) Create a local env file
 
-## Deploy for free with Render + Vercel
+Copy [.env.example](.env.example) to `.env` and fill in the real values.
 
-The easiest free deployment pattern for this project is:
+Example:
 
-- Frontend: Vercel
-- Backend: Render
-- Google Sheet credentials: environment variables only
+```env
+GOOGLE_SHEET_ID=your_sheet_id
+GOOGLE_SHEET_RANGE=Sheet1!A:C
+GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
+```
 
-This keeps the React app static on Vercel while the Python API reads and writes the Google Sheet from Render.
+> Do not commit `.env` to GitHub.
 
-### 1) Prepare the backend on Render
+### 4) Start the backend
 
-1. Push this repository to GitHub.
-2. In Render, click **New > Web Service** and connect the GitHub repository.
-3. Use the following settings:
-   - Runtime: Python
-   - Root directory: `.`
-   - Build command: `pip install -r python-service/requirements.txt`
-   - Start command: `uvicorn python-service.main:app --host 0.0.0.0 --port $PORT`
-4. Add environment variables in Render:
-   - `GOOGLE_SHEET_ID`
-   - `GOOGLE_SHEET_RANGE`
-   - `GOOGLE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS`
-5. Copy the deployed Render URL after the service is live.
+Open one terminal and run:
 
-### 2) Prepare the frontend on Vercel
+```powershell
+cd "D:\bajaj earth assignment project\python-service"
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
 
-1. Import the same GitHub repository into Vercel.
-2. In the Vercel project settings, add:
-   - `VITE_API_URL=https://your-render-service.onrender.com`
-3. Deploy the frontend.
-4. The browser will call the Render API instead of `localhost`.
+Then verify it is running:
 
-### 3) Important production note
+```powershell
+curl http://127.0.0.1:8000/rows
+```
 
-For local development, the app uses the Node proxy at `/api/rows`.
-For production deployment, set `VITE_API_URL` and the frontend calls the live Render backend directly.
+### 5) Start the frontend
 
-### 4) Security
+Open a second terminal and run:
 
-- Never commit the service-account JSON to GitHub.
-- Store it in the hosting platform environment variables.
-- Do not expose secrets in frontend source code.
+```powershell
+cd "D:\bajaj earth assignment project"
+npm run dev
+```
 
-### 5) Expected latency
+Then open:
 
-The app uses polling every 2 seconds to fetch the latest sheet values. Changes made directly in Google Sheets appear in the web UI on the next polling interval.
+```text
+http://localhost:5173
+```
+
+## Google Sheets setup
+
+1. Enable the Google Sheets API in Google Cloud Console.
+2. Create a service account and JSON key.
+3. Share the target Google Sheet with the service account email as Editor.
+4. Put the service-account JSON in `GOOGLE_SERVICE_ACCOUNT_JSON`.
+5. Make sure the sheet header row contains `A`, `B`, `C` in row 1.
+
+## Synchronization behavior
+
+The app polls the sheet every 2 seconds and refreshes the browser table automatically. When you click Submit, the app clears and rewrites the `A:C` range with the current edited rows.
+
+## Vercel-only deployment
+
+This project is designed to deploy entirely on Vercel.
+
+### Required Vercel environment variables
+
+Add these in the Vercel project settings:
+
+- `GOOGLE_SHEET_ID`
+- `GOOGLE_SHEET_RANGE`
+- `GOOGLE_SERVICE_ACCOUNT_JSON`
+
+Do not add `VITE_API_URL` for the Vercel-only version because the app calls `/api/rows` directly.
+
+### Vercel build settings
+
+- Framework: Vite
+- Build command: `npm run build`
+- Output directory: `dist`
+
+### API route behavior
+
+The app uses [api/rows.js](api/rows.js) as the API endpoint, so the browser calls:
+
+```text
+/api/rows
+```
+
+This route performs the live read/write to Google Sheets and returns JSON for the frontend.
+
+## Security notes
+
+- Never commit the service account JSON to GitHub.
+- Use Vercel environment variables for secrets.
+- Keep `.env` and any service-account JSON file outside the repository.
+
+## Expected result
+
+Once the Vercel deployment is live and the env vars are configured correctly, the page should load real data from the Google Sheet, and edits from the browser should update the sheet through the Vercel API route.
