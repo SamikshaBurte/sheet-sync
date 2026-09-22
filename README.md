@@ -4,9 +4,9 @@ A single-page React table that keeps columns **A**, **B**, and **C** synchronize
 
 ## What is included
 
-- Exactly three editable data columns (A, B, C) and four demonstration rows.
+- Exactly three editable data columns (A, B, C), with add and delete row controls.
 - **Edit table → Submit changes** workflow with validation-preserving whole-range writes.
-- 5-second polling to detect Google Sheet edits without a browser refresh.
+- 2-second polling to detect Google Sheet edits without a browser refresh.
 - A safe demo mode, so the interface is immediately demonstrable even before credentials exist.
 - No credential is embedded in frontend code or committed to Git.
 
@@ -26,11 +26,11 @@ Without credentials, the app runs in **demo mode**, persisting edits only in `py
 2. Create a service account and JSON key. Do not upload the key to GitHub.
 3. Share the Google Sheet with the service-account email as **Editor**.
 4. Put either the minified JSON in `GOOGLE_SERVICE_ACCOUNT_JSON` or an absolute local path in `GOOGLE_APPLICATION_CREDENTIALS` in `.env`.
-5. Ensure `Sheet1!A1:C5` holds the headers `A | B | C` followed by four data rows. The API will update this exact range, avoiding duplicate rows.
+5. Ensure `Sheet1` uses headers `A | B | C` in row 1. The API synchronizes the complete `Sheet1!A:C` range, so rows can be added or deleted.
 
 ## Synchronization behavior and limitation
 
-The browser requests `GET /api/rows` every **5 seconds**. The Python service reads `Sheet1!A1:C5`; therefore changes made directly in Google Sheets appear in the page on the next polling cycle, without refresh. After Submit, the Python service atomically updates the same fixed range using `USER_ENTERED`, then returns the saved rows to the frontend. Typical direct-edit latency is 0–5 seconds plus API response time. Polling is intentionally used here because Google Sheets does not provide a straightforward first-party cell-change webhook; it is reliable for this small fixed table and easy to deploy.
+The browser requests `GET /api/rows` every **2 seconds**. The Python service reads the complete `Sheet1!A:C` range, so changes made directly in Google Sheets appear in the page on the next polling cycle without a browser refresh. After Submit, it clears and rewrites the A:C data range from the table, ensuring removed rows do not leave old cell values behind. Typical direct-edit latency is 0-2 seconds plus API response time. Polling is used because Google Sheets does not provide a straightforward first-party cell-change webhook.
 
 ## Deploy for free with Vercel
 
