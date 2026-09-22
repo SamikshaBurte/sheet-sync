@@ -3,8 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './styles.css'
 
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1nsbiN1FXZa7LekCrP_gdzwjBqiR1RF9AWuJgskIt-Pc/edit?gid=0#gid=0'
-const BACKEND_URL = import.meta.env.VITE_API_URL || ''
-const rowsUrl = BACKEND_URL ? `${BACKEND_URL.replace(/\/$/, '')}/rows` : '/api/rows'
+const rowsUrl = '/api/rows'
 
 function App() {
   const [rows, setRows] = useState([])

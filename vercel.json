@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
-  "functions": {
-    "api/sheet.py": { "maxDuration": 30 }
-  }
+  "routes": [
+    { "src": "/api/rows", "dest": "/api/rows.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }
