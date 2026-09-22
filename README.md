@@ -32,13 +32,50 @@ Without credentials, the app runs in **demo mode**, persisting edits only in `py
 
 The browser requests `GET /api/rows` every **2 seconds**. The Python service reads the complete `Sheet1!A:C` range, so changes made directly in Google Sheets appear in the page on the next polling cycle without a browser refresh. After Submit, it clears and rewrites the A:C data range from the table, ensuring removed rows do not leave old cell values behind. Typical direct-edit latency is 0-2 seconds plus API response time. Polling is used because Google Sheets does not provide a straightforward first-party cell-change webhook.
 
-## Deploy for free with Vercel
+## Deploy for free with Render + Vercel
 
-This repository is configured for a single Vercel project: `api/rows.js` is the Node.js public API gateway and `api/sheet.py` is the Python Google Sheets function. The React page calls the Node route, which calls the Python route. This preserves the assignment's React + Node.js + Python architecture in one free deployment.
+The easiest free deployment pattern for this project is:
 
-1. Push this folder to a new GitHub repository, then import that repository at Vercel.
-2. In Vercel **Settings → Environment Variables**, add `GOOGLE_SHEET_ID`, `GOOGLE_SHEET_RANGE`, and `GOOGLE_SERVICE_ACCOUNT_JSON` for Production, Preview, and Development.
-3. For `GOOGLE_SERVICE_ACCOUNT_JSON`, paste the entire contents of the service-account JSON key as one value. Never create a `VITE_*` variable for it and never commit the file.
-4. Deploy. Vercel builds the Vite frontend and detects the Node and Python functions in `api/`.
+- Frontend: Vercel
+- Backend: Render
+- Google Sheet credentials: environment variables only
 
-Vercel's Python Functions support FastAPI and are available on all plans (currently beta), which makes this suitable for the small demonstration app. For a production system, use a dedicated backend with monitoring and secret rotation.
+This keeps the React app static on Vercel while the Python API reads and writes the Google Sheet from Render.
+
+### 1) Prepare the backend on Render
+
+1. Push this repository to GitHub.
+2. In Render, click **New > Web Service** and connect the GitHub repository.
+3. Use the following settings:
+   - Runtime: Python
+   - Root directory: `.`
+   - Build command: `pip install -r python-service/requirements.txt`
+   - Start command: `uvicorn python-service.main:app --host 0.0.0.0 --port $PORT`
+4. Add environment variables in Render:
+   - `GOOGLE_SHEET_ID`
+   - `GOOGLE_SHEET_RANGE`
+   - `GOOGLE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS`
+5. Copy the deployed Render URL after the service is live.
+
+### 2) Prepare the frontend on Vercel
+
+1. Import the same GitHub repository into Vercel.
+2. In the Vercel project settings, add:
+   - `VITE_API_URL=https://your-render-service.onrender.com`
+3. Deploy the frontend.
+4. The browser will call the Render API instead of `localhost`.
+
+### 3) Important production note
+
+For local development, the app uses the Node proxy at `/api/rows`.
+For production deployment, set `VITE_API_URL` and the frontend calls the live Render backend directly.
+
+### 4) Security
+
+- Never commit the service-account JSON to GitHub.
+- Store it in the hosting platform environment variables.
+- Do not expose secrets in frontend source code.
+
+### 5) Expected latency
+
+The app uses polling every 2 seconds to fetch the latest sheet values. Changes made directly in Google Sheets appear in the web UI on the next polling interval.

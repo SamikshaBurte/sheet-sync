@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import './styles.css'
 
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1nsbiN1FXZa7LekCrP_gdzwjBqiR1RF9AWuJgskIt-Pc/edit?gid=0#gid=0'
+const BACKEND_URL = import.meta.env.VITE_API_URL || ''
+const rowsUrl = BACKEND_URL ? `${BACKEND_URL.replace(/\/$/, '')}/rows` : '/api/rows'
 
 function App() {
   const [rows, setRows] = useState([])
@@ -14,7 +16,7 @@ function App() {
 
   const load = async (quiet = false) => {
     try {
-      const response = await fetch('/api/rows')
+      const response = await fetch(rowsUrl)
       if (!response.ok) throw new Error('Unable to load')
       const data = await response.json()
       setRows(data.rows)
@@ -33,7 +35,7 @@ function App() {
   const submit = async () => {
     setStatus({ text: 'Saving changes…', type: 'neutral' })
     try {
-      const response = await fetch('/api/rows', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows: draft }) })
+      const response = await fetch(rowsUrl, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows: draft }) })
       const data = await response.json(); if (!response.ok) throw new Error(data.error)
       setRows(data.rows); setDraft(data.rows); editingRef.current = false; setEditing(false)
       setStatus({ text: data.mode === 'demo' ? 'Saved in demo mode. Configure Google credentials for live writes.' : 'Saved to Google Sheets successfully', type: data.mode === 'demo' ? 'warning' : 'success' })
