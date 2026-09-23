@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './styles.css'
 
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1nsbiN1FXZa7LekCrP_gdzwjBqiR1RF9AWuJgskIt-Pc/edit?gid=0#gid=0'
-const rowsUrl = '/api/rows'
+const rowsUrl = `${(import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}/rows`
 
 function App() {
   const [rows, setRows] = useState([])
